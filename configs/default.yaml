@@ -1,0 +1,49 @@
+# Default active learning configuration
+seed: 42
+n_seeds: 5
+
+# Pool protocol
+initial_labeled_fraction: 0.05
+r_ref_fraction: 0.2          # fraction of L0 reserved as fixed R_ref
+test_fraction: 0.2           # hold-out test set T
+batch_size: 50
+n_rounds: 10
+
+# LGBM hyperparameters (shared across all methods)
+lgbm:
+  n_estimators: 100
+  learning_rate: 0.1
+  num_leaves: 31
+  max_depth: -1
+  min_child_samples: 20
+  subsample: 0.8
+  colsample_bytree: 0.8
+  reg_alpha: 0.0
+  reg_lambda: 0.0
+  verbose: -1
+
+# Batch selection (shared diversity module)
+diversity:
+  prefilter_multiplier: 5
+  n_clusters: null           # defaults to batch_size
+  embedding: features        # features | leaf_index
+  discard_negative: false
+  self_influence_filter: false
+  self_influence_quantile: 0.9
+
+# Influence method
+influence:
+  explainer: boostin         # boostin | leafinfluence
+  aggregation: sum           # sum | mean | loss_weighted
+  pseudo_label_mode: argmax  # argmax | top_k_max | expected
+  top_k_classes: 3
+  reference: r_ref           # r_ref | r_pseudo
+  r_pseudo_size: 200
+
+# Oracle calibration (evaluation only)
+oracle:
+  enabled: true
+  subset_size: 50
+
+# Experiment output
+output_dir: results

@@ -1,0 +1,6 @@
+method: influence_shapley
+shapley:
+  enabled: true
+  prefilter_fraction: 0.2
+  knn_neighbors: 5
+  top_k_classes: 10

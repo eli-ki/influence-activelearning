@@ -1,0 +1,3 @@
+# Dataset-specific overrides (optional)
+# Example: subsample large datasets
+max_pool_samples: null
