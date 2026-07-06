@@ -22,6 +22,7 @@ Each round `t`:
 |------------|-------------|
 | Temp train on all `U_t` pseudo | Scores reflect pseudo-labeled joint fit, not clean add-one counterfactual |
 | BoostIn fixed-structure | Split changes when adding points are ignored (Brophy et al. JMLR 2023) |
+| BoostIn binary-only | Influence methods require datasets with exactly two classes (labels 0 and 1) |
 | Pseudo-labels from **M_t** | Wrong labels bias **M̃_t**; use top-K aggregation ablation |
 | **BADGE-adapted** | GBDT leaf-embedding analogue, not original neural BADGE |
 
@@ -40,11 +41,11 @@ pip install -e ".[dev]"
 ## Run experiments
 
 ```bash
-# Single run — influence method on iris
-python -m influence_al.experiments.run --dataset iris --method influence --seed 42
+# Single run — influence method (binary classification only)
+python -m influence_al.experiments.run --dataset breast_cancer --method influence --seed 42
 
-# Compare methods
-python -m influence_al.experiments.run --dataset iris --compare influence random uncertainty badge
+# Compare methods on a multiclass dataset (baselines only; influence requires binary labels)
+python -m influence_al.experiments.run --dataset iris --compare random uncertainty badge
 
 # Multi-seed
 python -m influence_al.experiments.run --dataset breast_cancer --method influence --n-seeds 5

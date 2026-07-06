@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import yaml
 
+from influence_al.acquisition.influence import INFLUENCE_METHODS, validate_influence_dataset
 from influence_al.data.datasets import load_dataset
 from influence_al.data.pool import ActiveLearningPool
 from influence_al.evaluation.metrics import compute_learning_curve_stats
@@ -39,6 +40,8 @@ def run_single(
         test_fraction=config.get("test_fraction", 0.2),
         seed=seed,
     )
+    if method in INFLUENCE_METHODS:
+        validate_influence_dataset(data.y_pool, data.task, dataset_name)
     pool = ActiveLearningPool.from_pool(
         data.X_pool,
         data.y_pool,

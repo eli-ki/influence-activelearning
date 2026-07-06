@@ -49,6 +49,13 @@ def _encode_labels(y: np.ndarray) -> np.ndarray:
     return le.fit_transform(y).astype(np.int64)
 
 
+def _feature_names(data: object) -> Optional[list[str]]:
+    names = getattr(data, "feature_names", None)
+    if names is None:
+        return None
+    return [str(name) for name in names]
+
+
 def _load_openml(name: str, max_samples: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
     openml_map = {
         "credit_g": "credit-g",
@@ -89,7 +96,7 @@ def load_dataset(
         else:
             raise ValueError(name)
         X, y = data.data, data.target
-        feature_names = list(getattr(data, "feature_names", None) or [])
+        feature_names = _feature_names(data)
     else:
         X, y = _load_openml(name, max_samples=max_pool_samples)
         feature_names = None
@@ -116,5 +123,5 @@ def load_dataset(
         y_test=y_test,
         task=task,
         name=name,
-        feature_names=feature_names or None,
+        feature_names=feature_names,
     )

@@ -3,15 +3,23 @@
 import numpy as np
 import pytest
 
-from influence_al.acquisition.influence import TempModelInfluenceAcquisition
+from influence_al.acquisition.influence import (
+    TempModelInfluenceAcquisition,
+    validate_influence_dataset,
+)
 from influence_al.acquisition.base import AcquisitionContext
 from influence_al.data.pool import ActiveLearningPool
 from influence_al.models.trainer import LGBMTrainer
 
-pytest.importorskip("tree_influence")
+
+def test_validate_influence_dataset_rejects_multiclass():
+    y = np.array([0, 1, 2, 0, 1, 2])
+    with pytest.raises(ValueError, match="exactly two classes"):
+        validate_influence_dataset(y, "classification", "iris")
 
 
 def test_influence_scorer_returns_scores():
+    pytest.importorskip("tree_influence")
     X = np.random.randn(80, 4)
     y = np.random.randint(0, 2, 80)
     pool = ActiveLearningPool.from_pool(X, y, 0.2, 0.25, seed=0)
