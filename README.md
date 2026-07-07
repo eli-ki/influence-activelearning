@@ -53,7 +53,7 @@ python -m influence_al.experiments.run --dataset breast_cancer --method influenc
 
 ### Datasets
 
-`iris`, `breast_cancer`, `credit_g`, `phoneme`, `diabetes`, `california_housing`
+`iris`, `breast_cancer`, `credit_g`, `phoneme`, `adult`, `diabetes`, `california_housing`
 
 ### Methods
 
@@ -85,6 +85,44 @@ Key settings:
 pytest
 ```
 
+## Robustness & label-efficiency study
+
+The study runner compares methods across **clean** and **corrupted** pool scenarios (OOD injection), and reports label efficiency (labels to reach 95% of best final accuracy), learning-curve AUC, win rate vs random, and oracle Spearman.
+
+```bash
+# Preview planned runs (5 methods × 3 scenarios × 5 seeds)
+python -m influence_al.experiments.study --dry-run
+
+# Run one scenario first (faster iteration)
+python -m influence_al.experiments.study --scenarios clean
+
+# Full Adult robustness benchmark (requires Python 3.9–3.10 + tree-influence)
+python -m influence_al.experiments.study --study adult_robustness
+
+# Rebuild report from existing results
+python -m influence_al.experiments.study --report-only
+```
+
+Outputs under `results/study/adult_robustness/`:
+
+| Artifact | Description |
+|----------|-------------|
+| `{scenario}/{dataset}_{method}.json` | Per-method multi-seed learning curves |
+| `{scenario}/summary.csv` / `summary.md` | Label efficiency + vs-random stats |
+| `{scenario}/label_efficiency.png` | Bar chart: labels to target |
+| `{scenario}/{dataset}_comparison.png` | Learning curves per scenario |
+| `robustness_comparison.png` | Cross-scenario final metric & label cost |
+| `robustness_deltas.csv` | Degradation from clean → corrupted |
+| `report.md` | Aggregated study report |
+
+Scenarios in [`configs/studies/adult_robustness.yaml`](configs/studies/adult_robustness.yaml):
+
+- **clean** — baseline label efficiency
+- **ood_20** — 20% OOD rows in pool (ADS-style)
+- **ood_35** — stronger corruption
+
+Methods compared: `influence`, `influence_shapley`, `influence_r_pseudo` (R_pseudo ablation), `random`, `uncertainty`.
+
 ## Project layout
 
 ```
@@ -93,8 +131,8 @@ src/influence_al/
   models/        LGBM trainer (M_t vs M̃_t)
   acquisition/   Influence scorer, baselines, diversity, Shapley pre-filter
   loop/          AL engine
-  evaluation/    Metrics, oracle calibration
-  experiments/   CLI
+  evaluation/    Metrics, oracle calibration, label-efficiency
+  experiments/   CLI, robustness study runner
 ```
 
 ## References

@@ -37,7 +37,7 @@ def build_acquisition(method: str, config: dict) -> AcquisitionFunction:
     from influence_al.acquisition.shapley import ShapleyPrefilterAcquisition
 
     inf_cfg = config.get("influence", {})
-    if method == "influence":
+    if method in ("influence", "influence_r_pseudo"):
         return TempModelInfluenceAcquisition(
             explainer_name=inf_cfg.get("explainer", "boostin"),
             aggregation=inf_cfg.get("aggregation", "sum"),

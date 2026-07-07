@@ -25,6 +25,7 @@ all = ["tree-influence>=0.1.7; python_version < '3.11'", "pytest>=7.0"]
 
 [project.scripts]
 influence-al = "influence_al.experiments.run:main"
+influence-al-study = "influence_al.experiments.study:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

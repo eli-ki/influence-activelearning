@@ -1,0 +1,28 @@
+# Robustness + label-efficiency study on Adult (binary, large pool)
+name: adult_robustness
+dataset: adult
+output_dir: results/study/adult_robustness
+n_seeds: 5
+target_fraction: 0.95
+baseline_method: random
+
+methods:
+  - influence
+  - influence_shapley
+  - influence_r_pseudo
+  - random
+  - uncertainty
+
+scenarios:
+  - name: clean
+    description: "Clean pool — label efficiency baseline"
+
+  - name: ood_20
+    description: "20% OOD rows in pool (ADS-style corruption)"
+    pool_corruption:
+      ood_fraction: 0.2
+
+  - name: ood_35
+    description: "35% OOD rows in pool — stronger corruption"
+    pool_corruption:
+      ood_fraction: 0.35

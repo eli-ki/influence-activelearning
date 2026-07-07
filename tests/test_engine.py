@@ -36,6 +36,6 @@ def test_engine_runs_few_rounds():
 
 def test_build_acquisition_methods():
     cfg = {"influence": {"explainer": "boostin", "reference": "r_ref"}}
-    for method in ["random", "uncertainty", "margin", "loss", "badge", "influence"]:
+    for method in ["random", "uncertainty", "margin", "loss", "badge", "influence", "influence_r_pseudo"]:
         acq = build_acquisition(method, cfg)
         assert acq is not None

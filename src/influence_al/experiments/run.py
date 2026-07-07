@@ -17,6 +17,7 @@ import yaml
 
 from influence_al.acquisition.influence import INFLUENCE_METHODS, validate_influence_dataset
 from influence_al.data.datasets import load_dataset
+from influence_al.data.noisy import inject_ood_rows
 from influence_al.data.pool import ActiveLearningPool
 from influence_al.evaluation.metrics import LearningCurveResult, compute_learning_curve_stats
 from influence_al.loop.engine import ActiveLearningEngine, build_acquisition
@@ -51,11 +52,18 @@ def run_single(
         seed=seed,
         max_pool_samples=config.get("max_pool_samples"),
     )
+    X_pool, y_pool = data.X_pool.copy(), data.y_pool.copy()
+
+    corruption = config.get("pool_corruption") or {}
+    ood_frac = corruption.get("ood_fraction", 0.0)
+    if ood_frac and ood_frac > 0:
+        X_pool, y_pool = inject_ood_rows(X_pool, y_pool, ood_frac, seed=seed + 1000)
+
     if method in INFLUENCE_METHODS:
-        validate_influence_dataset(data.y_pool, data.task, dataset_name)
+        validate_influence_dataset(y_pool, data.task, dataset_name)
     pool = ActiveLearningPool.from_pool(
-        data.X_pool,
-        data.y_pool,
+        X_pool,
+        y_pool,
         initial_labeled_fraction=config.get("initial_labeled_fraction", 0.05),
         r_ref_fraction=config.get("r_ref_fraction", 0.2),
         seed=seed,
@@ -85,6 +93,8 @@ def run_single(
         "dataset": dataset_name,
         "seed": seed,
         "task": data.task,
+        "scenario": config.get("scenario_name"),
+        "pool_corruption": corruption,
         "n_labels": result.learning_curve.n_labels,
         "test_metrics": result.learning_curve.test_metrics,
         "oracle_spearman": result.learning_curve.oracle_spearman,
@@ -130,7 +140,11 @@ def run_multi_seed(
     return {"runs": results, "stats": stats}
 
 
-def plot_learning_curves(all_stats: List[dict], output_path: Path) -> Path:
+def plot_learning_curves(
+    all_stats: List[dict],
+    output_path: Path,
+    title_suffix: str = "",
+) -> Path:
     output_path = output_path.resolve()
     output_path.parent.mkdir(parents=True, exist_ok=True)
 
@@ -148,7 +162,10 @@ def plot_learning_curves(all_stats: List[dict], output_path: Path) -> Path:
     ax.set_xlabel("Number of labeled samples")
     ax.set_ylabel("Test metric (accuracy / R²)")
     if all_stats:
-        ax.set_title(f"Active learning — {all_stats[0].get('dataset', '')}")
+        title = f"Active learning — {all_stats[0].get('dataset', '')}"
+        if title_suffix:
+            title += f" ({title_suffix})"
+        ax.set_title(title)
     ax.legend()
     ax.grid(True, alpha=0.3)
     fig.tight_layout()

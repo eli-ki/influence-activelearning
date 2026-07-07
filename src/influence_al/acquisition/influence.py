@@ -8,7 +8,7 @@ import numpy as np
 
 from influence_al.acquisition.base import AcquisitionContext, AcquisitionFunction
 
-INFLUENCE_METHODS = frozenset({"influence", "influence_shapley"})
+INFLUENCE_METHODS = frozenset({"influence", "influence_shapley", "influence_r_pseudo"})
 
 
 def validate_influence_dataset(
