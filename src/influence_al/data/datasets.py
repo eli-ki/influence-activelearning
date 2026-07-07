@@ -75,7 +75,7 @@ def load_dataset(
     name: str,
     test_fraction: float = 0.2,
     seed: int = 42,
-    max_pool_samples: Optional[int] = None,
+    max_pool_samples: int | None = None,
 ) -> DatasetBundle:
     """Load a benchmark dataset; split into pool P and test T."""
     name = name.lower()

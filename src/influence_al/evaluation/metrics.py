@@ -20,13 +20,14 @@ class LearningCurveResult:
 
 
 def compute_learning_curve_stats(results: List[LearningCurveResult]) -> dict:
-    """Aggregate multi-seed learning curves."""
+    """Aggregate multi-seed learning curves (aligns to shortest curve length)."""
     if not results:
         return {}
     method = results[0].method
     dataset = results[0].dataset
-    all_metrics = np.array([r.test_metrics for r in results])
-    all_labels = results[0].n_labels
+    min_len = min(len(r.test_metrics) for r in results)
+    all_metrics = np.array([r.test_metrics[:min_len] for r in results])
+    all_labels = results[0].n_labels[:min_len]
     return {
         "method": method,
         "dataset": dataset,
