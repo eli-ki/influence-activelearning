@@ -94,9 +94,12 @@ class LGBMTrainer:
         return (preds - y) ** 2
 
     def leaf_index_embedding(self, model: Any, X: np.ndarray) -> np.ndarray:
-        """Leaf indices per tree as a flat embedding."""
-        leaf = model.predict(X, pred_leaf=True)
-        return leaf.astype(np.float64)
+        """Leaf indices per tree as a flat embedding (always 2D)."""
+        X = np.atleast_2d(np.asarray(X, dtype=np.float64))
+        leaf = np.asarray(model.predict(X, pred_leaf=True), dtype=np.float64)
+        if leaf.ndim == 1:
+            leaf = leaf.reshape(-1, 1)
+        return leaf
 
     def uncertainty_scores(self, model: Any, X: np.ndarray) -> np.ndarray:
         if self.task == "classification":

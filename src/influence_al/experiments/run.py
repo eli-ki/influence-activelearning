@@ -101,9 +101,18 @@ def run_multi_seed(
     n_seeds = n_seeds or config.get("n_seeds", 5)
     base_seed = config.get("seed", 42)
     results = []
+    failed_seeds = []
     for i in range(n_seeds):
         seed = base_seed + i
-        results.append(run_single(dataset_name, method, seed, config))
+        try:
+            results.append(run_single(dataset_name, method, seed, config))
+        except Exception as exc:
+            failed_seeds.append(seed)
+            print(f"ERROR: {method} seed {seed} failed: {exc}", file=sys.stderr)
+    if not results:
+        raise RuntimeError(f"All seeds failed for method '{method}': {failed_seeds}")
+    if failed_seeds:
+        print(f"Warning: {method} completed {len(results)}/{n_seeds} seeds", file=sys.stderr)
     stats = compute_learning_curve_stats(
         [
             LearningCurveResult(
@@ -129,7 +138,7 @@ def plot_learning_curves(all_stats: List[dict], output_path: Path) -> Path:
     for stats in all_stats:
         x = stats["n_labels"]
         y = stats["test_metric_mean"]
-        ax.plot(x, y, marker="o", markersize=3, label=stats["method"])
+        ax.plot(x, y, marker=".", markersize=4, linewidth=1.5, label=stats["method"])
         std = stats.get("test_metric_std")
         if std and max(std) > 0:
             arr = np.array(y)
@@ -200,6 +209,8 @@ def main() -> None:
     parser.add_argument("--config-dir", type=str, default="configs")
     parser.add_argument("--seed", type=int, default=None)
     parser.add_argument("--n-seeds", type=int, default=None)
+    parser.add_argument("--batch-size", type=int, default=None, help="Labels queried per AL round")
+    parser.add_argument("--n-rounds", type=int, default=None, help="Number of active learning rounds")
     parser.add_argument("--output-dir", type=str, default=None)
     parser.add_argument(
         "--compare",
@@ -218,6 +229,10 @@ def main() -> None:
     cfg = load_config(config_dir, args.dataset, args.method)
     if args.output_dir:
         cfg["output_dir"] = args.output_dir
+    if args.batch_size is not None:
+        cfg["batch_size"] = args.batch_size
+    if args.n_rounds is not None:
+        cfg["n_rounds"] = args.n_rounds
     output_dir = Path(cfg.get("output_dir", "results"))
     output_dir.mkdir(parents=True, exist_ok=True)
 
@@ -230,35 +245,45 @@ def main() -> None:
         return
 
     all_stats = []
+    failed_methods: List[str] = []
 
     for method in methods:
         m_cfg = load_config(config_dir, args.dataset, method)
-        m_cfg.update({k: v for k, v in cfg.items() if k not in m_cfg or k in ("output_dir", "seed")})
+        m_cfg.update({k: v for k, v in cfg.items() if k not in m_cfg or k in ("output_dir", "seed", "batch_size", "n_rounds")})
         if args.seed is not None:
             m_cfg["seed"] = args.seed
         if args.n_seeds is not None:
             m_cfg["n_seeds"] = args.n_seeds
+        if args.batch_size is not None:
+            m_cfg["batch_size"] = args.batch_size
+        if args.n_rounds is not None:
+            m_cfg["n_rounds"] = args.n_rounds
 
-        n_seeds = m_cfg.get("n_seeds", 5)
-        if n_seeds > 1:
-            out = run_multi_seed(args.dataset, method, m_cfg, n_seeds)
-        else:
-            seed = args.seed or m_cfg.get("seed", 42)
-            out = {"runs": [run_single(args.dataset, method, seed, m_cfg)], "stats": {}}
-            out["stats"] = compute_learning_curve_stats(
-                [
-                    LearningCurveResult(
-                        method=method,
-                        dataset=args.dataset,
-                        seed=r["seed"],
-                        n_labels=r["n_labels"],
-                        test_metrics=r["test_metrics"],
-                        beats_random_rounds=[],
-                        oracle_spearman=r.get("oracle_spearman", []),
-                    )
-                    for r in out["runs"]
-                ]
-            )
+        try:
+            n_seeds = m_cfg.get("n_seeds", 5)
+            if n_seeds > 1:
+                out = run_multi_seed(args.dataset, method, m_cfg, n_seeds)
+            else:
+                seed = args.seed or m_cfg.get("seed", 42)
+                out = {"runs": [run_single(args.dataset, method, seed, m_cfg)], "stats": {}}
+                out["stats"] = compute_learning_curve_stats(
+                    [
+                        LearningCurveResult(
+                            method=method,
+                            dataset=args.dataset,
+                            seed=r["seed"],
+                            n_labels=r["n_labels"],
+                            test_metrics=r["test_metrics"],
+                            beats_random_rounds=[],
+                            oracle_spearman=r.get("oracle_spearman", []),
+                        )
+                        for r in out["runs"]
+                    ]
+                )
+        except Exception as exc:
+            failed_methods.append(method)
+            print(f"ERROR: method '{method}' failed: {exc}", file=sys.stderr)
+            continue
 
         out_path = (output_dir / f"{args.dataset}_{method}.json").resolve()
         with open(out_path, "w", encoding="utf-8") as f:
@@ -271,11 +296,27 @@ def main() -> None:
                 print(f"  oracle spearman mean: {out['stats']['oracle_spearman_mean']:.3f}")
             print_curve_summary(out["stats"])
 
-    if compare_mode and len(all_stats) >= 2:
-        plot_path = plot_learning_curves(all_stats, output_dir / f"{args.dataset}_comparison.png")
-        print(f"Saved plot: {plot_path}")
-    elif compare_mode:
-        print("Warning: fewer than 2 methods produced stats; no comparison plot.", file=sys.stderr)
+    if failed_methods:
+        print(f"Warning: failed methods: {failed_methods}", file=sys.stderr)
+
+    if compare_mode:
+        # Prefer in-memory stats; fall back to JSON on disk (e.g. after partial runs)
+        if len(all_stats) < 2:
+            all_stats = []
+            for method in methods:
+                path = output_dir / f"{args.dataset}_{method}.json"
+                stats = stats_from_json(path) if path.exists() else None
+                if stats:
+                    all_stats.append(stats)
+        if len(all_stats) >= 2:
+            plot_path = plot_learning_curves(all_stats, output_dir / f"{args.dataset}_comparison.png")
+            print(f"Saved plot: {plot_path}")
+        else:
+            print(
+                "Warning: fewer than 2 methods have results; no comparison plot. "
+                "Re-run with --plot-only once more JSON files exist.",
+                file=sys.stderr,
+            )
 
 
 if __name__ == "__main__":

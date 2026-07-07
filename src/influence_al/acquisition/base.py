@@ -68,10 +68,12 @@ class AcquisitionFunction(ABC):
     ) -> np.ndarray:
         indices, scores = self.score(ctx)
         if batch_selector is not None:
+            idx = np.asarray(indices, dtype=int)
+            X = np.atleast_2d(np.asarray(ctx.pool.X_pool[idx], dtype=np.float64))
             return batch_selector.select(
-                indices=indices,
-                scores=scores,
-                X=ctx.pool.X_pool[indices],
+                indices=idx,
+                scores=np.asarray(scores, dtype=np.float64),
+                X=X,
                 model=ctx.model,
                 trainer=ctx.trainer,
                 batch_size=batch_size,

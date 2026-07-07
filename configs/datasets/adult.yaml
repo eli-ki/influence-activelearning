@@ -2,8 +2,8 @@
 # ~48k rows in OpenML; subsample for tractable influence scoring per round
 max_pool_samples: 8000
 initial_labeled_fraction: 0.005   # ~32 initial labels (after test split)
-batch_size: 80
-n_rounds: 20
+batch_size: 20                    # smaller batches → finer learning curves
+n_rounds: 50                      # ~32 + 50×20 = 1032 labeled (51 curve points)
 n_seeds: 3
 
 lgbm:
