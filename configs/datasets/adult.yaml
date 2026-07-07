@@ -1,0 +1,20 @@
+# Adult census income — large binary dataset, challenging for AL
+# ~48k rows in OpenML; subsample for tractable influence scoring per round
+max_pool_samples: 8000
+initial_labeled_fraction: 0.005   # ~32 initial labels (after test split)
+batch_size: 80
+n_rounds: 20
+n_seeds: 3
+
+lgbm:
+  n_estimators: 80
+  learning_rate: 0.08
+  num_leaves: 31
+  min_child_samples: 30
+
+oracle:
+  enabled: true
+  subset_size: 40
+
+diversity:
+  prefilter_multiplier: 8

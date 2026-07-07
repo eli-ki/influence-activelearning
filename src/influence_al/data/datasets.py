@@ -37,6 +37,7 @@ DATASET_REGISTRY = {
     "breast_cancer": ("classification", "sklearn"),
     "credit_g": ("classification", "openml"),
     "phoneme": ("classification", "openml"),
+    "adult": ("classification", "openml"),
     "diabetes": ("regression", "sklearn"),
     "california_housing": ("regression", "sklearn"),
 }
@@ -57,13 +58,18 @@ def _feature_names(data: object) -> Optional[list[str]]:
 
 
 def _load_openml(name: str, max_samples: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
+    from sklearn.preprocessing import OrdinalEncoder
+
     openml_map = {
         "credit_g": "credit-g",
         "phoneme": "phoneme",
+        "adult": "adult",
     }
     data = fetch_openml(openml_map.get(name, name), version=1, as_frame=True, parser="auto")
-    X = data.data.select_dtypes(include=[np.number]).fillna(0).values.astype(np.float64)
+    enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
+    X = enc.fit_transform(data.data.astype(str)).astype(np.float64)
     y = data.target.values
+
     if max_samples and len(X) > max_samples:
         rng = np.random.default_rng(0)
         idx = rng.choice(len(X), max_samples, replace=False)
@@ -115,6 +121,8 @@ def load_dataset(
     scaler = StandardScaler()
     X_pool = scaler.fit_transform(X_pool)
     X_test = scaler.transform(X_test)
+    X_pool = np.nan_to_num(X_pool, nan=0.0, posinf=0.0, neginf=0.0)
+    X_test = np.nan_to_num(X_test, nan=0.0, posinf=0.0, neginf=0.0)
 
     return DatasetBundle(
         X_pool=X_pool.astype(np.float64),
