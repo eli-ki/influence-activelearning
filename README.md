@@ -1,6 +1,6 @@
 # Tree-Influence Active Learning for LightGBM
 
-Pool-based batch active learning on **ADS / RALIF image benchmarks** using [tree-influence](https://github.com/jjbrophy47/tree_influence) (BoostIn) and LightGBM on flattened pixels.
+Pool-based batch active learning using [tree-influence](https://github.com/jjbrophy47/tree_influence) (BoostIn) and LightGBM on **tabular** benchmarks (e.g. Adult) and **ADS/RALIF vision** benchmarks (flattened pixels).
 
 ## Core method
 
@@ -53,7 +53,11 @@ python -m influence_al.experiments.run --dataset fashion_mnist --method random -
 python -m influence_al.experiments.run --dataset cifar10 --method uncertainty --n-seeds 5
 ```
 
-### Datasets (ADS + RALIF only)
+### Datasets
+
+**Tabular** (OpenML / sklearn): `iris`, `breast_cancer`, `credit_g`, `phoneme`, `adult`, `diabetes`, `california_housing`
+
+**Vision** (ADS / RALIF, requires torchvision):
 
 | Name | Papers | Notes |
 |------|--------|-------|
@@ -66,7 +70,7 @@ python -m influence_al.experiments.run --dataset cifar10 --method uncertainty --
 | `fashion_mnist` | RALIF | 60k train / 10k test |
 | `inaturalist` | RALIF | iNaturalist 2018 species (large; subsample via config) |
 
-> **Not included:** ADS **Cheap-10** (custom web-scrape, no public mirror).
+> Influence methods require **binary** labels (`adult`, `breast_cancer`, `credit_g`). Vision sets are multiclass → use baselines unless you add a binary subset.
 
 Use `max_pool_samples` in [`configs/datasets/`](configs/datasets/) to subsample large pools for tractable LGBM runs.
 
@@ -104,18 +108,26 @@ pytest
 ## Robustness & label-efficiency study
 
 ```bash
-python -m influence_al.experiments.study --dry-run
+# Adult (binary tabular) — influence vs baselines, no Shapley
+python -m influence_al.experiments.study --study adult_robustness --scenarios clean
+
+# CIFAR-10 vision baselines
 python -m influence_al.experiments.study --study cifar10_robustness --scenarios clean
-python -m influence_al.experiments.study --study cifar10_robustness
+
+# Skip methods that already have JSON on disk (default)
+python -m influence_al.experiments.study --study adult_robustness
+
+# Force re-run everything
+python -m influence_al.experiments.study --study adult_robustness --no-skip-existing
 ```
 
-Outputs under `results/study/cifar10_robustness/`. Scenarios: **clean**, **ood_20**, **ood_35** (ADS-style pool corruption).
+Outputs under `results/study/<study_name>/`. Scenarios: **clean**, **ood_20**, **ood_35** (ADS-style pool corruption).
 
 ## Project layout
 
 ```
 src/influence_al/
-  data/          Vision loaders, pool, R_ref split
+  data/          Tabular + vision loaders, pool, R_ref split
   models/        LGBM trainer (M_t vs M̃_t)
   acquisition/   Influence scorer, baselines, diversity, Shapley pre-filter
   loop/          AL engine

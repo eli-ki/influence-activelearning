@@ -54,6 +54,7 @@ def run_scenario(
     scenario: dict,
     config_dir: Path,
     dry_run: bool = False,
+    skip_existing: bool = True,
 ) -> Dict[str, dict]:
     dataset = study["dataset"]
     methods = study["methods"]
@@ -70,10 +71,24 @@ def run_scenario(
     for method in methods:
         m_cfg = merge_scenario_config(config_dir, dataset, method, scenario, study)
         m_cfg["output_dir"] = str(scenario_dir)
+        out_path = scenario_dir / f"{dataset}_{method}.json"
 
         if dry_run:
-            print(f"  [dry-run] would run {method} ({m_cfg.get('n_seeds', 3)} seeds)")
+            status = "exists" if out_path.exists() else "run"
+            print(f"  [dry-run] {method} ({m_cfg.get('n_seeds', 3)} seeds) — {status}")
             continue
+
+        if skip_existing and out_path.exists():
+            try:
+                with open(out_path, encoding="utf-8") as f:
+                    out = json.load(f)
+                print(f"  Skipping {method} (found {out_path.name})")
+                results_by_method[method] = out
+                if out.get("stats"):
+                    all_stats.append(out["stats"])
+                continue
+            except (json.JSONDecodeError, OSError) as exc:
+                print(f"  Warning: could not load {out_path.name}, re-running: {exc}", file=sys.stderr)
 
         try:
             n_seeds = m_cfg.get("n_seeds", 3)
@@ -82,7 +97,6 @@ def run_scenario(
             print(f"  ERROR {method}: {exc}", file=sys.stderr)
             continue
 
-        out_path = scenario_dir / f"{dataset}_{method}.json"
         with open(out_path, "w", encoding="utf-8") as f:
             json.dump(out, f, indent=2)
         print(f"  Saved {out_path.name} (final={out['stats'].get('final_metric_mean', 0):.4f})")
@@ -230,7 +244,7 @@ def main() -> None:
     parser.add_argument(
         "--study",
         type=str,
-        default="cifar10_robustness",
+        default="adult_robustness",
         help="Study config name under configs/studies/",
     )
     parser.add_argument("--config-dir", type=str, default="configs")
@@ -239,6 +253,12 @@ def main() -> None:
         nargs="*",
         default=None,
         help="Subset of scenario names (default: all in study config)",
+    )
+    parser.add_argument(
+        "--skip-existing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Skip methods whose JSON output already exists (default: true)",
     )
     parser.add_argument(
         "--dry-run",
@@ -270,7 +290,13 @@ def main() -> None:
 
     ran: List[str] = []
     for scenario in scenarios:
-        run_scenario(study, scenario, config_dir, dry_run=args.dry_run)
+        run_scenario(
+            study,
+            scenario,
+            config_dir,
+            dry_run=args.dry_run,
+            skip_existing=args.skip_existing,
+        )
         ran.append(scenario["name"])
 
     if not args.dry_run:

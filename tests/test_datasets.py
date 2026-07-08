@@ -7,19 +7,40 @@ import pytest
 
 from influence_al.data.datasets import list_datasets, load_dataset
 
+TABULAR_DATASETS = {
+    "iris",
+    "breast_cancer",
+    "credit_g",
+    "phoneme",
+    "adult",
+    "diabetes",
+    "california_housing",
+}
 
-@pytest.mark.parametrize("name", list_datasets())
-def test_registry_lists_ads_ralif_datasets(name):
-    assert name in {
-        "cifar10",
-        "cifar100",
-        "cinic10",
-        "tiny_imagenet",
-        "svhn",
-        "svhn_extra",
-        "fashion_mnist",
-        "inaturalist",
-    }
+VISION_DATASETS = {
+    "cifar10",
+    "cifar100",
+    "cinic10",
+    "tiny_imagenet",
+    "svhn",
+    "svhn_extra",
+    "fashion_mnist",
+    "inaturalist",
+}
+
+
+def test_registry_includes_tabular_and_vision():
+    names = set(list_datasets())
+    assert TABULAR_DATASETS <= names
+    assert VISION_DATASETS <= names
+
+
+def test_load_breast_cancer():
+    data = load_dataset("breast_cancer", seed=42, max_pool_samples=200)
+    assert data.task == "classification"
+    assert data.X_pool.shape[0] <= 200
+    assert data.X_pool.shape[1] == data.X_test.shape[1]
+    assert set(data.y_pool.tolist()) <= {0, 1}
 
 
 def _fashion_mnist_cached() -> bool:
