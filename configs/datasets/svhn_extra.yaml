@@ -1,0 +1,13 @@
+# SVHN extra split — ADS large unlabeled pool (~531k images)
+max_pool_samples: 20000
+initial_labeled_fraction: 0.01
+batch_size: 100
+n_rounds: 25
+
+lgbm:
+  n_estimators: 100
+  learning_rate: 0.08
+  num_leaves: 63
+
+oracle:
+  subset_size: 30

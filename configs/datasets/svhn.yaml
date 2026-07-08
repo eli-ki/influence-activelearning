@@ -1,0 +1,13 @@
+# SVHN — ADS + RALIF (73k train / 26k test)
+max_pool_samples: 12000
+initial_labeled_fraction: 0.02
+batch_size: 80
+n_rounds: 30
+
+lgbm:
+  n_estimators: 100
+  learning_rate: 0.08
+  num_leaves: 63
+
+oracle:
+  subset_size: 40

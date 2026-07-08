@@ -1,0 +1,14 @@
+# CIFAR-100 — RALIF
+max_pool_samples: 10000
+initial_labeled_fraction: 0.1
+batch_size: 100
+n_rounds: 30
+
+lgbm:
+  n_estimators: 150
+  learning_rate: 0.08
+  num_leaves: 127
+  min_child_samples: 20
+
+oracle:
+  subset_size: 40

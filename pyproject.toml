@@ -20,8 +20,14 @@ dependencies = [
 
 [project.optional-dependencies]
 dev = ["pytest>=7.0"]
+vision = ["torch>=2.0", "torchvision>=0.15"]
 influence = ["tree-influence>=0.1.7; python_version < '3.11'"]
-all = ["tree-influence>=0.1.7; python_version < '3.11'", "pytest>=7.0"]
+all = [
+    "tree-influence>=0.1.7; python_version < '3.11'",
+    "torch>=2.0",
+    "torchvision>=0.15",
+    "pytest>=7.0",
+]
 
 [project.scripts]
 influence-al = "influence_al.experiments.run:main"

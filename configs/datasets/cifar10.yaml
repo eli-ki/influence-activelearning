@@ -1,0 +1,19 @@
+# CIFAR-10 — ADS + RALIF (50k train / 10k test)
+# ADS paper: 5k initial labels, 5k batch; subsample pool for tractable LGBM runs
+max_pool_samples: 10000
+initial_labeled_fraction: 0.1
+batch_size: 100
+n_rounds: 30
+
+lgbm:
+  n_estimators: 120
+  learning_rate: 0.08
+  num_leaves: 63
+  min_child_samples: 20
+
+oracle:
+  enabled: true
+  subset_size: 40
+
+diversity:
+  prefilter_multiplier: 5

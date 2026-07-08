@@ -1,10 +1,45 @@
 """Dataset loader tests."""
 
-from influence_al.data.datasets import load_dataset
+import os
+from pathlib import Path
+
+import pytest
+
+from influence_al.data.datasets import list_datasets, load_dataset
 
 
-def test_load_breast_cancer_feature_names():
-    data = load_dataset("breast_cancer", seed=42)
-    assert data.feature_names is not None
-    assert len(data.feature_names) == data.X_pool.shape[1]
-    assert data.feature_names[0] == "mean radius"
+@pytest.mark.parametrize("name", list_datasets())
+def test_registry_lists_ads_ralif_datasets(name):
+    assert name in {
+        "cifar10",
+        "cifar100",
+        "cinic10",
+        "tiny_imagenet",
+        "svhn",
+        "svhn_extra",
+        "fashion_mnist",
+        "inaturalist",
+    }
+
+
+def _fashion_mnist_cached() -> bool:
+    root = Path(os.environ.get("INFLUENCE_AL_DATA_DIR", "data"))
+    return (root / "FashionMNIST").exists()
+
+
+def test_load_fashion_mnist_subsampled():
+    pytest.importorskip("torchvision")
+    if not _fashion_mnist_cached():
+        pytest.skip("Fashion-MNIST not cached locally")
+    data = load_dataset(
+        "fashion_mnist",
+        seed=42,
+        max_pool_samples=256,
+        max_test_samples=512,
+    )
+    assert data.task == "classification"
+    assert data.X_pool.shape[0] == 256
+    assert data.X_pool.shape[1] == 28 * 28
+    assert data.X_test.shape[0] == 512
+    assert data.n_classes == 10
+    assert "RALIF" in data.papers

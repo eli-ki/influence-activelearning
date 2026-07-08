@@ -1,0 +1,14 @@
+# iNaturalist 2018 — RALIF (large-scale; subsample for tractability)
+max_pool_samples: 8000
+initial_labeled_fraction: 0.02
+batch_size: 50
+n_rounds: 20
+
+lgbm:
+  n_estimators: 120
+  learning_rate: 0.08
+  num_leaves: 127
+  min_child_samples: 40
+
+oracle:
+  subset_size: 30

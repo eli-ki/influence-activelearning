@@ -1,17 +1,17 @@
-# Robustness + label-efficiency study on Adult (binary, large pool)
-name: adult_robustness
-dataset: adult
-output_dir: results/study/adult_robustness
+# Robustness + label-efficiency study on CIFAR-10 (ADS / RALIF benchmark)
+name: cifar10_robustness
+dataset: cifar10
+output_dir: results/study/cifar10_robustness
 n_seeds: 5
 target_fraction: 0.95
 baseline_method: random
 
 methods:
-  - influence
-  - influence_shapley
-  - influence_r_pseudo
   - random
   - uncertainty
+  - badge
+  - margin
+  - loss
 
 scenarios:
   - name: clean

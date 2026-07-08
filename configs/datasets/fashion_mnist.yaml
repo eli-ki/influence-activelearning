@@ -1,0 +1,13 @@
+# Fashion-MNIST — RALIF (60k train / 10k test)
+max_pool_samples: 8000
+initial_labeled_fraction: 0.05
+batch_size: 50
+n_rounds: 25
+
+lgbm:
+  n_estimators: 80
+  learning_rate: 0.1
+  num_leaves: 31
+
+oracle:
+  subset_size: 30

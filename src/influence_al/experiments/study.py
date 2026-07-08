@@ -230,7 +230,7 @@ def main() -> None:
     parser.add_argument(
         "--study",
         type=str,
-        default="adult_robustness",
+        default="cifar10_robustness",
         help="Study config name under configs/studies/",
     )
     parser.add_argument("--config-dir", type=str, default="configs")

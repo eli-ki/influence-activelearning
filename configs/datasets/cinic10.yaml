@@ -1,0 +1,13 @@
+# CINIC-10 — ADS (large mixed CIFAR-10 + ImageNet pool)
+max_pool_samples: 15000
+initial_labeled_fraction: 0.02
+batch_size: 100
+n_rounds: 25
+
+lgbm:
+  n_estimators: 120
+  learning_rate: 0.08
+  num_leaves: 63
+
+oracle:
+  subset_size: 40

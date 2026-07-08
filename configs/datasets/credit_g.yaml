@@ -1,5 +1,0 @@
-# credit-g: larger pool, good for AL comparisons
-initial_labeled_fraction: 0.02
-batch_size: 20
-n_rounds: 15
-max_pool_samples: 2000

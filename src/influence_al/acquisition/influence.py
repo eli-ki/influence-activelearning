@@ -29,8 +29,8 @@ def validate_influence_dataset(
             f"Influence-based acquisition (BoostIn/LeafInfluence) requires exactly "
             f"two classes labeled 0 and 1, but dataset '{dataset_name}' has "
             f"{len(classes)} classes: {classes.tolist()}. "
-            f"Use a binary dataset such as breast_cancer or credit_g, or switch to a "
-            f"baseline method (random, uncertainty, badge, margin, loss)."
+            f"Use baseline methods (random, uncertainty, badge, margin, loss) on "
+            f"multiclass ADS/RALIF datasets, or subsample two classes."
         )
 
 

@@ -221,7 +221,7 @@ def resolve_compare_methods(args: argparse.Namespace) -> tuple[List[str], bool]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Tree-influence active learning experiments")
-    parser.add_argument("--dataset", type=str, default="iris")
+    parser.add_argument("--dataset", type=str, default="cifar10")
     parser.add_argument("--method", type=str, default="influence")
     parser.add_argument("--config-dir", type=str, default="configs")
     parser.add_argument("--seed", type=int, default=None)

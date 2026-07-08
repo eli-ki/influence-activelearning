@@ -1,22 +1,17 @@
-"""Dataset loaders for tabular classification and regression benchmarks."""
+"""Dataset loaders for ADS / RALIF vision classification benchmarks."""
 
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Literal, Optional, Tuple
+from pathlib import Path
+from typing import Literal, Optional
 
 import numpy as np
-from sklearn.datasets import (
-    fetch_california_housing,
-    fetch_openml,
-    load_breast_cancer,
-    load_diabetes,
-    load_iris,
-)
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder, StandardScaler
+from sklearn.preprocessing import StandardScaler
 
-TaskType = Literal["classification", "regression"]
+from influence_al.data.vision_datasets import VISION_DATASET_REGISTRY, load_vision_dataset, _subsample
+
+TaskType = Literal["classification"]
 
 
 @dataclass
@@ -30,51 +25,36 @@ class DatasetBundle:
     task: TaskType
     name: str
     feature_names: Optional[list[str]] = None
+    n_classes: Optional[int] = None
+    papers: tuple[str, ...] = ()
 
 
-DATASET_REGISTRY = {
-    "iris": ("classification", "sklearn"),
-    "breast_cancer": ("classification", "sklearn"),
-    "credit_g": ("classification", "openml"),
-    "phoneme": ("classification", "openml"),
-    "adult": ("classification", "openml"),
-    "diabetes": ("regression", "sklearn"),
-    "california_housing": ("regression", "sklearn"),
-}
+DATASET_REGISTRY = {name: ("classification", "vision") for name in VISION_DATASET_REGISTRY}
 
 
-def _encode_labels(y: np.ndarray) -> np.ndarray:
-    if y.dtype.kind in ("i", "u", "f") and len(np.unique(y)) > 20:
-        return y.astype(np.float64)
-    le = LabelEncoder()
-    return le.fit_transform(y).astype(np.int64)
+def _subsample_test(
+    X_test: np.ndarray,
+    y_test: np.ndarray,
+    max_test_samples: Optional[int],
+    seed: int,
+) -> tuple[np.ndarray, np.ndarray]:
+    return _subsample(X_test, y_test, max_test_samples, seed)
 
 
-def _feature_names(data: object) -> Optional[list[str]]:
-    names = getattr(data, "feature_names", None)
-    if names is None:
-        return None
-    return [str(name) for name in names]
+def list_datasets() -> list[str]:
+    return sorted(DATASET_REGISTRY)
 
 
-def _load_openml(name: str, max_samples: Optional[int] = None) -> Tuple[np.ndarray, np.ndarray]:
-    from sklearn.preprocessing import OrdinalEncoder
-
-    openml_map = {
-        "credit_g": "credit-g",
-        "phoneme": "phoneme",
-        "adult": "adult",
-    }
-    data = fetch_openml(openml_map.get(name, name), version=1, as_frame=True, parser="auto")
-    enc = OrdinalEncoder(handle_unknown="use_encoded_value", unknown_value=-1)
-    X = enc.fit_transform(data.data.astype(str)).astype(np.float64)
-    y = data.target.values
-
-    if max_samples and len(X) > max_samples:
-        rng = np.random.default_rng(0)
-        idx = rng.choice(len(X), max_samples, replace=False)
-        X, y = X[idx], y[idx]
-    return X, y
+def _scale_features(
+    X_pool: np.ndarray,
+    X_test: np.ndarray,
+) -> tuple[np.ndarray, np.ndarray]:
+    scaler = StandardScaler()
+    X_pool = scaler.fit_transform(X_pool)
+    X_test = scaler.transform(X_test)
+    X_pool = np.nan_to_num(X_pool, nan=0.0, posinf=0.0, neginf=0.0)
+    X_test = np.nan_to_num(X_test, nan=0.0, posinf=0.0, neginf=0.0)
+    return X_pool.astype(np.float64), X_test.astype(np.float64)
 
 
 def load_dataset(
@@ -82,54 +62,43 @@ def load_dataset(
     test_fraction: float = 0.2,
     seed: int = 42,
     max_pool_samples: int | None = None,
+    max_test_samples: int | None = None,
+    data_root: str | Path | None = None,
 ) -> DatasetBundle:
-    """Load a benchmark dataset; split into pool P and test T."""
+    """Load an ADS / RALIF benchmark using official train/test splits.
+
+    Images are flattened to feature vectors for LightGBM. ``test_fraction`` is
+    ignored — each benchmark uses its canonical held-out test set.
+    """
+    del test_fraction  # official splits only
+
     name = name.lower()
     if name not in DATASET_REGISTRY:
-        raise ValueError(f"Unknown dataset '{name}'. Available: {list(DATASET_REGISTRY)}")
+        raise ValueError(f"Unknown dataset '{name}'. Available: {list_datasets()}")
 
-    task, source = DATASET_REGISTRY[name]
-
-    if source == "sklearn":
-        if name == "iris":
-            data = load_iris()
-        elif name == "breast_cancer":
-            data = load_breast_cancer()
-        elif name == "diabetes":
-            data = load_diabetes()
-        elif name == "california_housing":
-            data = fetch_california_housing()
-        else:
-            raise ValueError(name)
-        X, y = data.data, data.target
-        feature_names = _feature_names(data)
-    else:
-        X, y = _load_openml(name, max_samples=max_pool_samples)
-        feature_names = None
-
-    if max_pool_samples and source == "sklearn" and len(X) > max_pool_samples:
-        rng = np.random.default_rng(0)
-        idx = rng.choice(len(X), max_pool_samples, replace=False)
-        X, y = X[idx], y[idx]
-
-    y = _encode_labels(y)
-
-    X_pool, X_test, y_pool, y_test = train_test_split(
-        X, y, test_size=test_fraction, random_state=seed, stratify=y if task == "classification" else None
+    meta = VISION_DATASET_REGISTRY[name]
+    root = Path(data_root) if data_root is not None else None
+    X_pool, y_pool, X_test, y_test = load_vision_dataset(
+        name,
+        data_root=root,
+        max_pool_samples=max_pool_samples,
+        seed=seed,
     )
+    X_pool, X_test = _scale_features(X_pool, X_test)
+    X_test, y_test = _subsample_test(X_test, y_test, max_test_samples, seed + 1)
 
-    scaler = StandardScaler()
-    X_pool = scaler.fit_transform(X_pool)
-    X_test = scaler.transform(X_test)
-    X_pool = np.nan_to_num(X_pool, nan=0.0, posinf=0.0, neginf=0.0)
-    X_test = np.nan_to_num(X_test, nan=0.0, posinf=0.0, neginf=0.0)
+    n_classes = meta.get("classes")
+    if n_classes is None:
+        n_classes = int(np.max(y_pool)) + 1
 
     return DatasetBundle(
-        X_pool=X_pool.astype(np.float64),
-        y_pool=y_pool,
-        X_test=X_test.astype(np.float64),
-        y_test=y_test,
-        task=task,
+        X_pool=X_pool,
+        y_pool=y_pool.astype(np.int64),
+        X_test=X_test,
+        y_test=y_test.astype(np.int64),
+        task="classification",
         name=name,
-        feature_names=feature_names,
+        feature_names=None,
+        n_classes=int(n_classes),
+        papers=tuple(meta.get("papers", ())),
     )

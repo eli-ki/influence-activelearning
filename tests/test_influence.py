@@ -15,7 +15,7 @@ from influence_al.models.trainer import LGBMTrainer
 def test_validate_influence_dataset_rejects_multiclass():
     y = np.array([0, 1, 2, 0, 1, 2])
     with pytest.raises(ValueError, match="exactly two classes"):
-        validate_influence_dataset(y, "classification", "iris")
+        validate_influence_dataset(y, "classification", "cifar10")
 
 
 def test_influence_scorer_returns_scores():

@@ -60,10 +60,10 @@ def test_robustness_deltas_and_report(tmp_path):
     assert deltas[0]["final_metric_drop"] == pytest.approx(-0.05)
     assert deltas[0]["extra_labels_vs_clean"] == 80
 
-    plot_robustness_comparison(summaries, tmp_path / "robustness.png", dataset="adult")
+    plot_robustness_comparison(summaries, tmp_path / "robustness.png", dataset="cifar10")
     assert (tmp_path / "robustness.png").exists()
 
-    study = {"name": "test", "dataset": "adult", "target_fraction": 0.95}
+    study = {"name": "test", "dataset": "cifar10", "target_fraction": 0.95}
     report = build_study_report(study, ["clean", "ood_20"], tmp_path)
     assert report.exists()
     text = report.read_text(encoding="utf-8")
