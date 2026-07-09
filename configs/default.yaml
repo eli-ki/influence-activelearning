@@ -2,10 +2,10 @@
 seed: 42
 n_seeds: 5
 
-# Pool protocol
-initial_labeled_fraction: 0.05
-r_ref_fraction: 0.2          # fraction of L0 reserved as fixed R_ref
-test_fraction: 0.2           # hold-out test set T
+# Pool protocol (disjoint split: L0 + R_ref + U0 partition the pool)
+initial_labeled_fraction: 0.05   # |L0| as fraction of pool (trainable seed labels)
+r_ref_fraction: 0.01             # |R_ref| as fraction of pool (fixed reference; not trainable)
+test_fraction: 0.2               # hold-out test set T
 batch_size: 25
 n_rounds: 20
 

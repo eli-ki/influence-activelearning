@@ -6,13 +6,13 @@ Pool-based batch active learning using [tree-influence](https://github.com/jjbro
 
 Each round `t`:
 
-1. Train **M_t** on `L_t_train` (true labels only; excludes fixed **R_ref**).
+1. Train **M_t** on `L_t` (true labels only; **R_ref** is held out separately).
 2. Pseudo-label all `u ∈ U_t` with **M_t**.
-3. Train temp model **M̃_t** on `L_t_train ∪ U_t` (scoring only).
+3. Train temp model **M̃_t** on `L_t ∪ U_t` (scoring only).
 4. Fit BoostIn on **M̃_t**; compute `I = influence(train, R_ref)`.
 5. `score(u) = Σ_r I[row(u), r]` (BoostIn: positive = u decreases loss on r).
 6. Pre-filter top `k×B`, **k-means++** diversity → query batch **B**.
-7. Eval model: retrain on true-labeled `L_t \ R_ref`; report metric on held-out **test T**.
+7. Eval model: retrain on true-labeled `L_t`; report metric on held-out **test T**.
 
 **M̃_t is never used for final evaluation** — only for acquisition scoring.
 
@@ -94,7 +94,8 @@ See [`configs/default.yaml`](configs/default.yaml). Per-dataset overrides in [`c
 Key settings:
 
 - `max_pool_samples`: subsample the official training split
-- `r_ref_fraction`: fraction of initial L0 held as fixed reference (never trained on)
+- `initial_labeled_fraction`: fraction of pool for initial labeled seed **L₀**
+- `r_ref_fraction`: fraction of pool for fixed reference **R_ref** (disjoint from L₀; never trained on)
 - `influence.reference`: `r_ref` (default) or `r_pseudo` (ablation)
 - `diversity.prefilter_multiplier`: top `k×B` before k-means++
 - `oracle.enabled`: Spearman calibration logging
@@ -127,7 +128,7 @@ Outputs under `results/study/<study_name>/`. Scenarios: **clean**, **ood_20**, *
 
 ```
 src/influence_al/
-  data/          Tabular + vision loaders, pool, R_ref split
+  data/          Tabular + vision loaders, pool (disjoint L₀/R_ref/U₀ split)
   models/        LGBM trainer (M_t vs M̃_t)
   acquisition/   Influence scorer, baselines, diversity, Shapley pre-filter
   loop/          AL engine
