@@ -16,21 +16,12 @@ def validate_influence_dataset(
     task: str,
     dataset_name: str,
 ) -> None:
-    """BoostIn/LeafInfluence only support binary classification (labels 0 and 1)."""
+    """Influence explainers require classification (binary or multiclass)."""
     if task != "classification":
         raise ValueError(
             f"Influence-based acquisition requires a classification dataset, "
             f"but '{dataset_name}' is configured for {task}. "
             f"Use a non-influence method for regression."
-        )
-    classes = np.unique(y)
-    if len(classes) != 2 or not np.array_equal(classes, [0, 1]):
-        raise ValueError(
-            f"Influence-based acquisition (BoostIn/LeafInfluence) requires exactly "
-            f"two classes labeled 0 and 1, but dataset '{dataset_name}' has "
-            f"{len(classes)} classes: {classes.tolist()}. "
-            f"Use baseline methods (random, uncertainty, badge, margin, loss) on "
-            f"multiclass ADS/RALIF datasets, or subsample two classes."
         )
 
 

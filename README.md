@@ -23,7 +23,7 @@ Each round `t`:
 | Flattened pixels | Images are vectorized for LightGBM (not CNN features like the original papers) |
 | Temp train on all `U_t` pseudo | Scores reflect pseudo-labeled joint fit, not clean add-one counterfactual |
 | BoostIn fixed-structure | Split changes when adding points are ignored (Brophy et al. JMLR 2023) |
-| BoostIn binary-only | Influence methods require exactly two classes; ADS/RALIF sets are multiclass → use baselines |
+| Multiclass influence | BoostIn/LeafInfluence support multiclass; large K (e.g. CIFAR-100) is slow — subsample pool/classes if needed |
 | Pseudo-labels from **M_t** | Wrong labels bias **M̃_t**; use top-K aggregation ablation |
 | **BADGE-adapted** | GBDT leaf-embedding analogue, not original neural BADGE |
 
@@ -43,8 +43,8 @@ Downloads are cached under `data/` (override with `INFLUENCE_AL_DATA_DIR`).
 ## Run experiments
 
 ```bash
-# Baselines on CIFAR-10 (multiclass — influence not supported)
-python -m influence_al.experiments.run --dataset cifar10 --compare random uncertainty badge
+# CIFAR-10 (multiclass — use max_pool_samples for tractable influence runs)
+python -m influence_al.experiments.run --dataset cifar10 --compare influence random uncertainty badge
 
 # Single method
 python -m influence_al.experiments.run --dataset fashion_mnist --method random --seed 42
@@ -70,7 +70,7 @@ python -m influence_al.experiments.run --dataset cifar10 --method uncertainty --
 | `fashion_mnist` | RALIF | 60k train / 10k test |
 | `inaturalist` | RALIF | iNaturalist 2018 species (large; subsample via config) |
 
-> Influence methods require **binary** labels (`adult`, `breast_cancer`, `credit_g`). Vision sets are multiclass → use baselines unless you add a binary subset.
+> Influence methods work on binary and multiclass classification. Large vision pools (CIFAR, Tiny ImageNet) benefit from `max_pool_samples` subsampling.
 
 Use `max_pool_samples` in [`configs/datasets/`](configs/datasets/) to subsample large pools for tractable LGBM runs.
 
@@ -78,7 +78,7 @@ Use `max_pool_samples` in [`configs/datasets/`](configs/datasets/) to subsample 
 
 | Method | Description |
 |--------|-------------|
-| `influence` | Temp-model BoostIn influence U → R_ref (binary only) |
+| `influence` | Temp-model BoostIn influence U → R_ref |
 | `influence_shapley` | Phase 2: Shapley pre-filter + influence |
 | `random` | Uniform baseline |
 | `uncertainty` | Entropy / residual |
