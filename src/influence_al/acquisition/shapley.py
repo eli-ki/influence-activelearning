@@ -9,9 +9,11 @@ from sklearn.neighbors import KNeighborsRegressor
 
 from influence_al.acquisition.base import AcquisitionContext, AcquisitionFunction
 from influence_al.acquisition.influence import TempModelInfluenceAcquisition
+from influence_al.compat.sklearn_patch import patch_sklearn_one_hot_encoder
 
 
 def _get_shapley_explainer(name: str = "subsample"):
+    patch_sklearn_one_hot_encoder()
     name = name.lower()
     if name == "subsample":
         from tree_influence.explainers import SubSample

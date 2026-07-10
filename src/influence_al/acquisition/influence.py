@@ -7,6 +7,7 @@ from typing import Any, Optional, Tuple
 import numpy as np
 
 from influence_al.acquisition.base import AcquisitionContext, AcquisitionFunction
+from influence_al.compat.sklearn_patch import patch_sklearn_one_hot_encoder
 
 INFLUENCE_METHODS = frozenset({"influence", "influence_shapley", "influence_r_pseudo"})
 
@@ -27,6 +28,7 @@ def validate_influence_dataset(
 
 def _get_explainer(name: str):
     try:
+        patch_sklearn_one_hot_encoder()
         name = name.lower()
         if name == "boostin":
             from tree_influence.explainers import BoostIn
